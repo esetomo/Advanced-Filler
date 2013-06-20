@@ -19,10 +19,10 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class BlockAdvFiller extends BlockContainer
 {
 
-	Icon textureTop;
-	Icon textureSide;
-	Icon textureFrontOn;
-	Icon textureFrontOff;
+	private Icon textureTop;
+	private Icon textureSide;
+	private Icon textureFrontOn;
+	private Icon textureFrontOff;
 
 	public BlockAdvFiller(int par1, Material par2Material)
 	{
@@ -92,8 +92,8 @@ public class BlockAdvFiller extends BlockContainer
 		ForgeDirection orientation = getOrientation(MathHelper.wrapAngleTo180_float(entityliving.rotationYaw));
 		world.setBlockMetadataWithNotify(i, j, k, orientation.getOpposite().ordinal(), 3);
 		TileAdvFiller tile = (TileAdvFiller) world.getBlockTileEntity(i, j, k);
-		tile.player = (EntityPlayer) entityliving;
-		tile.orient = orientation;
+		tile.setPlayer((EntityPlayer) entityliving);
+		tile.setOrient(orientation);
 		tile.placed();
 		tile.preInit();
 	}
@@ -123,13 +123,13 @@ public class BlockAdvFiller extends BlockContainer
 			if (world.isRemote)
 				return true;
 			TileAdvFiller tile = (TileAdvFiller) world.getBlockTileEntity(i, j, k);
-			tile.player = null;
-			tile.doLoop = false;
-			if (tile.initializeThread != null)
-				tile.initializeThread.stop();
+			tile.setPlayer(null);
+			tile.setDoLoop(false);
+			if (tile.getInitializeThread() != null)
+				tile.getInitializeThread().stop();
 			tile.setDisable();
-			tile.initializeThread = new Thread(new AdvFillerInitializeThread(tile));
-			tile.initializeThread.start();
+			tile.setInitializeThread(new Thread(new AdvFillerInitializeThread(tile)));
+			tile.getInitializeThread().start();
 			// クライアントにパケット送信
 			entityplayer.addChatMessage("AdvFiller : Start Initialize");
 			world.markBlockForUpdate(i, j, k);
@@ -138,7 +138,7 @@ public class BlockAdvFiller extends BlockContainer
 		if (!world.isRemote)
 			return true;
 		TileAdvFiller tile = (TileAdvFiller) world.getBlockTileEntity(i, j, k);
-		CommonProxy.proxy.openGui(i, j, k, tile.left, tile.right, tile.up, tile.down, tile.forward, tile.type, tile.loopMode, tile.removeModeIteration, tile.removeModeDrop);
+		CommonProxy.proxy.openGui(i, j, k, tile.getLeft(), tile.getRight(), tile.getUp(), tile.getDown(), tile.getForward(), tile.getType(), tile.isLoopMode(), tile.isRemoveModeIteration(), tile.isRemoveModeDrop());
 		return true;
 	}
 

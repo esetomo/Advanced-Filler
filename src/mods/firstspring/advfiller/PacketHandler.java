@@ -50,13 +50,13 @@ public class PacketHandler implements IPacketHandler
 			if (tile instanceof TileAdvFiller)
 			{
 				TileAdvFiller filler = (TileAdvFiller) tile;
-				filler.fromX = minX;
-				filler.fromY = minY;
-				filler.fromZ = minZ;
-				filler.toX = maxX;
-				filler.toY = maxY;
-				filler.toZ = maxZ;
-				if (filler.bcLoaded)
+				filler.setFromX(minX);
+				filler.setFromY(minY);
+				filler.setFromZ(minZ);
+				filler.setToX(maxX);
+				filler.setToY(maxY);
+				filler.setToZ(maxZ);
+				if (filler.getBcLoaded())
 				{
 					BuildCraftProxy.proxy.getBox(filler).deleteLasers();
 					BuildCraftProxy.proxy.getBox(filler).initialize(minX, minY, minZ, maxX, maxY, maxZ);
@@ -64,11 +64,11 @@ public class PacketHandler implements IPacketHandler
 						BuildCraftProxy.proxy.getBox(filler).createLasers(world, LaserKind.Stripes);
 				}
 				filler.setArea(left, right, up, down, forward, type);
-				filler.loopMode = loop;
-				filler.finished = finished;
-				filler.disabled = disabled;
-				filler.removeModeIteration = iterate;
-				filler.removeModeDrop = drop;
+				filler.setLoopMode(loop);
+				filler.setFinished(finished);
+				filler.setDisabled(disabled);
+				filler.setRemoveModeIteration(iterate);
+				filler.setRemoveModeDrop(drop);
 			}
 			// マシンのフロントの表示を更新する
 			world.markBlockForUpdate(tileX, tileY, tileZ);
@@ -106,15 +106,15 @@ public class PacketHandler implements IPacketHandler
 			if (tile instanceof TileAdvFiller)
 			{
 				TileAdvFiller filler = (TileAdvFiller) tile;
-				filler.player = entityplayer;
-				filler.doLoop = false;
+				filler.setPlayer(entityplayer);
+				filler.setDoLoop(false);
 				filler.setArea(left, right, up, down, forward, type);
-				filler.loopMode = loop;
-				filler.removeModeIteration = iterate;
-				filler.removeModeDrop = drop;
+				filler.setLoopMode(loop);
+				filler.setRemoveModeIteration(iterate);
+				filler.setRemoveModeDrop(drop);
 				// 止めても問題ないはず
-				if (filler.initializeThread != null)
-					filler.initializeThread.stop();
+				if (filler.getInitializeThread() != null)
+					filler.getInitializeThread().stop();
 				filler.preInit();
 				world.markBlockForUpdate(x, y, z);
 			}

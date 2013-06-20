@@ -20,8 +20,8 @@ import net.minecraftforge.common.ForgeDirection;
 public class Position
 {
 
-	public int x, y, z;
-	public ForgeDirection orientation;
+	private int x, y, z;
+	private ForgeDirection orientation;
 
 	public Position(int ci, int cj, int ck)
 	{
@@ -158,6 +158,25 @@ public class Position
 	public int hashCode()
 	{
 		return x * y * z;
+	}
+
+	public int getX() 
+	{
+		return this.x;
+	}
+	
+	public int getY()
+	{
+		return this.y;
+	}
+	
+	public int getZ()
+	{
+		return this.z;
+	}
+
+	public void setY(int i) {
+		this.y = i;
 	}
 
 }

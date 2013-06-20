@@ -82,11 +82,11 @@ public class BuildCraftProxy
 	public Box getBox(TileAdvFiller t)
 	{
 		Position p = new Position(t.xCoord, t.yCoord, t.zCoord);
-		if (!table.contains(t.dim, p))
+		if (!table.contains(t.getDim(), p))
 		{
-			table.put(t.dim, p, new Box());
+			table.put(t.getDim(), p, new Box());
 		}
-		return table.get(t.dim, p);
+		return table.get(t.getDim(), p);
 	}
 
 	public static void removeMarker(IAreaProvider i)

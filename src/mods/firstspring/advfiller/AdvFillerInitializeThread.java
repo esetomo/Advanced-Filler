@@ -6,7 +6,7 @@ import net.minecraftforge.common.ForgeChunkManager.Type;
 public class AdvFillerInitializeThread implements Runnable
 {
 
-	TileAdvFiller tile;
+	private TileAdvFiller tile;
 
 	public AdvFillerInitializeThread(TileAdvFiller tile)
 	{
@@ -16,16 +16,16 @@ public class AdvFillerInitializeThread implements Runnable
 	@Override
 	public void run()
 	{
-		tile.finished = false;
-		if (!tile.doLoop)
+		tile.setFinished(false);
+		if (!tile.isDoLoop())
 		{
-			ForgeChunkManager.releaseTicket(tile.chunkTicket);
-			tile.chunkTicket = ForgeChunkManager.requestTicket(AdvFiller.instance, tile.worldObj, Type.NORMAL);
+			ForgeChunkManager.releaseTicket(tile.getChunkTicket());
+			tile.setChunkTicket(ForgeChunkManager.requestTicket(AdvFiller.instance, tile.worldObj, Type.NORMAL));
 			tile.setLoadingChunks();
 		}
 		tile.init();
 		tile.setEnable();
-		tile.doLoop = false;
+		tile.setDoLoop(false);
 	}
 
 }

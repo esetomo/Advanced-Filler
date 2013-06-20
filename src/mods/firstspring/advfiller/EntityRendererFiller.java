@@ -8,7 +8,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 public class EntityRendererFiller extends Entity
 {
-	public TileAdvFiller filler;
+	private TileAdvFiller filler;
 
 	public EntityRendererFiller(World par1World, TileAdvFiller filler)
 	{
@@ -74,5 +74,10 @@ public class EntityRendererFiller extends Entity
 	@Override
 	protected void writeEntityToNBT(NBTTagCompound nbttagcompound)
 	{
+	}
+
+	public TileAdvFiller getFiller() 
+	{
+		return this.filler;
 	}
 }

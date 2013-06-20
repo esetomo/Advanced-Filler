@@ -45,40 +45,40 @@ import cpw.mods.fml.common.network.Player;
 
 public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergySink, IPipeEntry
 {
-	Thread initializeThread;
-	IPowerProvider powerProvider;
-	public int dim;
-	boolean bcLoaded = BuildCraftProxy.loaded;
-	Ticket chunkTicket;
+	private Thread initializeThread;
+	private IPowerProvider powerProvider;
+	private int dim;
+	private boolean bcLoaded = BuildCraftProxy.loaded;
+	private Ticket chunkTicket;
 	// used on chunkloading message
-	EntityPlayer player;
-	boolean doRender = false;
-	int left, right, up, down, forward;
-	int type;// 0 : Quarry Mode 1 : Remove Mode 2 : Filling Mode 3 : Flatten
+	private EntityPlayer player;
+	private boolean doRender = false;
+	private int left, right, up, down, forward;
+	private int type;// 0 : Quarry Mode 1 : Remove Mode 2 : Filling Mode 3 : Flatten
 				// Mode 4 : Exclusive Remove Mode 5 : TofuBuild Mode
-	int fromX, fromY, fromZ, toX, toY, toZ;
-	int tick = 0;
-	int rate;
-	boolean initialized = false, disabled = false, finished = false;
-	boolean loopMode = false;
-	boolean doLoop = false;
-	boolean removeModeDrop = false;
-	boolean removeModeIteration = false;// false:descend true:ascend
-	boolean ic2EnergyNet = false;
-	Position from, to;
-	List<Position> removeList;
-	ListIterator removeListIterator;
-	List<Position> fillList;
-	ListIterator fillListIterator;
+	private int fromX, fromY, fromZ, toX, toY, toZ;
+	private int tick = 0;
+	private int rate;
+	private boolean initialized = false, disabled = false, finished = false;
+	private boolean loopMode = false;
+	private boolean doLoop = false;
+	private boolean removeModeDrop = false;
+	private boolean removeModeIteration = false;// false:descend true:ascend
+	private boolean ic2EnergyNet = false;
+	private Position from, to;
+	private List<Position> removeList;
+	private ListIterator removeListIterator;
+	private List<Position> fillList;
+	private ListIterator fillListIterator;
 	// Quarry Mode
-	boolean frameCreated = false;
-	List<Position> frameBuildList;
-	ListIterator frameBuildListIterator;
-	List<Position> quarryList;
-	ListIterator quarryListIterator;
+	private boolean frameCreated = false;
+	private List<Position> frameBuildList;
+	private ListIterator frameBuildListIterator;
+	private List<Position> quarryList;
+	private ListIterator quarryListIterator;
 	// used Quarry Mode and Flatten Mode
-	HashSet<Coord> ignoreCoordSet;
-	ForgeDirection orient;
+	private HashSet<Coord> ignoreCoordSet;
+	private ForgeDirection orient;
 
 	public TileAdvFiller()
 	{
@@ -102,7 +102,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 			IAreaProvider a = null;
 			Position pos = new Position(xCoord, yCoord, zCoord, orient);
 			pos.moveForwards(1);
-			TileEntity tile = worldObj.getBlockTileEntity(pos.x, pos.y, pos.z);
+			TileEntity tile = worldObj.getBlockTileEntity(pos.getX(), pos.getY(), pos.getZ());
 			if (tile instanceof IAreaProvider)
 				a = (IAreaProvider) tile;
 			if (a != null)
@@ -135,9 +135,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		int x, y, z;
 		// minX
 		if (a.xMin() < a.xMax())
-			x = pos.x - a.xMin();
+			x = pos.getX() - a.xMin();
 		else
-			x = pos.x - a.xMax();
+			x = pos.getX() - a.xMax();
 		switch (orient)
 		{
 		case SOUTH:
@@ -154,9 +154,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 		// maxX
 		if (a.xMin() < a.xMax())
-			x = a.xMax() - pos.x;
+			x = a.xMax() - pos.getX();
 		else
-			x = a.xMin() - pos.x;
+			x = a.xMin() - pos.getX();
 		switch (orient)
 		{
 		case SOUTH:
@@ -173,9 +173,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 		// minZ
 		if (a.zMin() < a.zMax())
-			z = pos.z - a.zMin();
+			z = pos.getZ() - a.zMin();
 		else
-			z = pos.z - a.zMax();
+			z = pos.getZ() - a.zMax();
 		switch (orient)
 		{
 		case SOUTH:
@@ -192,9 +192,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 		// maxZ
 		if (a.zMin() < a.zMax())
-			z = a.zMax() - pos.z;
+			z = a.zMax() - pos.getZ();
 		else
-			z = a.zMin() - pos.z;
+			z = a.zMin() - pos.getZ();
 		switch (orient)
 		{
 		case SOUTH:
@@ -210,10 +210,10 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		}
 
 		// minY
-		down = pos.y - a.yMin();
+		down = pos.getY() - a.yMin();
 
 		// maxY
-		up = a.yMax() - pos.y;
+		up = a.yMax() - pos.getY();
 	}
 
 	public void preInit()
@@ -279,12 +279,12 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 	public void setBox()
 	{
-		fromX = (int) from.x;
-		fromY = (int) from.y;
-		fromZ = (int) from.z;
-		toX = (int) to.x;
-		toY = (int) to.y;
-		toZ = (int) to.z;
+		fromX = (int) from.getX();
+		fromY = (int) from.getY();
+		fromZ = (int) from.getZ();
+		toX = (int) to.getX();
+		toY = (int) to.getY();
+		toZ = (int) to.getZ();
 		if (bcLoaded)
 			BuildCraftProxy.proxy.getBox(this).initialize(fromX, fromY, fromZ, toX, toY, toZ);
 	}
@@ -297,14 +297,14 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		pos1.moveForwards(1);
 		pos1.moveLeft(left);
 		pos1.moveDown(down);
-		if (pos1.y <= 0)
-			pos1.y = 1;
+		if (pos1.getY() <= 0)
+			pos1.setY(1);
 		Position pos2 = new Position(xCoord, yCoord, zCoord, orient);
 		pos2.moveForwards(1 + forward);
 		pos2.moveRight(right);
 		pos2.moveUp(up);
-		if (pos2.y > 255)
-			pos2.y = 255;
+		if (pos2.getY() > 255)
+			pos2.setY(255);
 		from = pos1.min(pos2);
 		to = pos1.max(pos2);
 	}
@@ -462,13 +462,13 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		if (removeListIterator.hasNext())
 		{
 			Position pos = (Position) removeListIterator.next();
-			worldObj.setBlock(pos.x, pos.y, pos.z, 0);
+			worldObj.setBlock(pos.getX(), pos.getY(), pos.getZ(), 0);
 			return;
 		}
 		if (frameBuildListIterator.hasNext())
 		{
 			Position pos = (Position) frameBuildListIterator.next();
-			worldObj.setBlock(pos.x, pos.y, pos.z, BuildCraftProxy.getFrameBlockId(), 0, 3);
+			worldObj.setBlock(pos.getX(), pos.getY(), pos.getZ(), BuildCraftProxy.getFrameBlockId(), 0, 3);
 			return;
 		}
 		calculateFrame();
@@ -516,11 +516,11 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		if (quarryListIterator.hasNext())
 		{
 			Position pos = (Position) quarryListIterator.next();
-			List<ItemStack> stacks = BlockLib.getBlockDropped(worldObj, pos.x, pos.y, pos.z);
+			List<ItemStack> stacks = BlockLib.getBlockDropped(worldObj, pos.getX(), pos.getY(), pos.getZ());
 			if (AdvFiller.breakEffect)
 				// クァーリーよりコピペ
-				worldObj.playAuxSFXAtEntity(null, 2001, pos.x, pos.y, pos.z, (worldObj.getBlockId(pos.x, pos.y, pos.z) + (worldObj.getBlockMetadata(pos.x, pos.y, pos.z) << 12)));
-			worldObj.setBlock(pos.x, pos.y, pos.z, 0);
+				worldObj.playAuxSFXAtEntity(null, 2001, pos.getX(), pos.getY(), pos.getZ(), (worldObj.getBlockId(pos.getX(), pos.getY(), pos.getZ()) + (worldObj.getBlockMetadata(pos.getX(), pos.getY(), pos.getZ()) << 12)));
+			worldObj.setBlock(pos.getX(), pos.getY(), pos.getZ(), 0);
 			if (stacks == null || stacks.isEmpty())
 				return;
 			for (ItemStack stack : stacks)
@@ -587,7 +587,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 						i = 3;
 					}
 					pos = (Position) removeListIterator.next();
-					doRemove(pos.x, pos.y, pos.z);
+					doRemove(pos.getX(), pos.getY(), pos.getZ());
 
 				} else if (!loopMode)
 				{
@@ -620,7 +620,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 						i = 3;
 					}
 					pos = (Position) removeListIterator.previous();
-					doRemove(pos.x, pos.y, pos.z);
+					doRemove(pos.getX(), pos.getY(), pos.getZ());
 				} else if (!loopMode)
 				{
 					finished = true;
@@ -669,7 +669,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 				if (powerProvider.useEnergy(rate, rate, false) != rate)
 					return;
 				pos = (Position) fillListIterator.next();
-				if (doFill(pos.x, pos.y, pos.z))
+				if (doFill(pos.getX(), pos.getY(), pos.getZ()))
 					powerProvider.useEnergy(rate, rate, true);
 				else if (!loopMode)
 				{
@@ -773,7 +773,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 					return;
 				powerProvider.useEnergy(rate, rate, true);
 				pos = (Position) removeListIterator.next();
-				doRemove(pos.x, pos.y, pos.z);
+				doRemove(pos.getX(), pos.getY(), pos.getZ());
 				if (i == 3)// 下に制御が行かないように
 					return;
 			}
@@ -785,7 +785,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 				if (powerProvider.useEnergy(rate, rate, false) != rate)
 					return;
 				pos = (Position) fillListIterator.previous();
-				if (doFill(pos.x, pos.y, pos.z))
+				if (doFill(pos.getX(), pos.getY(), pos.getZ()))
 					powerProvider.useEnergy(rate, rate, true);
 				else
 				{
@@ -1040,5 +1040,182 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public boolean acceptItems()
 	{
 		return false;
+	}
+	
+	public boolean getBcLoaded()
+	{
+		return this.bcLoaded;
+	}
+	
+	public Ticket getChunkTicket()
+	{
+		return this.chunkTicket;
+	}
+	
+	public int getDim()
+	{
+		return this.dim;
+	}
+	
+	public boolean isDoLoop()
+	{
+		return this.doLoop;
+	}
+
+	public int getLeft() 
+	{
+		return this.left;
+	}
+
+	public int getRight() 
+	{
+		return this.right;
+	}
+
+	public int getUp()
+	{
+		return this.up;
+	}
+
+	public int getDown() {
+		return this.down;
+	}
+
+	public int getForward() {
+		return this.forward;
+	}
+
+	public int getFromX() 
+	{
+		return this.fromX;
+	}
+
+	public int getToX() 
+	{
+		return this.toX;
+	}
+	
+	public int getFromY() 
+	{
+		return this.fromY;
+	}
+
+	public int getToY() 
+	{
+		return this.toY;
+	}
+	
+	public int getFromZ() 
+	{
+		return this.fromZ;
+	}
+
+	public int getToZ() 
+	{
+		return this.toZ;
+	}
+
+	public Thread getInitializeThread() 
+	{
+		return this.initializeThread;
+	}
+
+	public int getType() 
+	{
+		return this.type;
+	}
+
+	public boolean isLoopMode() 
+	{
+		return this.loopMode;
+	}
+
+	public boolean isRemoveModeIteration() 
+	{
+		return this.removeModeIteration;
+	}
+
+	public boolean isRemoveModeDrop() 
+	{
+		return this.removeModeDrop;
+	}
+	
+	public boolean isDoRender()
+	{
+		return this.doRender;
+	}
+
+	public void setChunkTicket(Ticket requestTicket) 
+	{
+		this.chunkTicket = requestTicket;
+	}
+
+	public void setFinished(boolean finished2) 
+	{
+		this.finished = finished2;
+	}
+
+	public void setDisabled(boolean disabled2) 
+	{
+		this.disabled = disabled2;
+	}
+
+	public void setDoLoop(boolean b) 
+	{
+		this.doLoop = b;
+	}
+
+	public void setFromX(int minX) 
+	{
+		this.fromX = minX;
+	}
+	
+	public void setFromY(int minY)
+	{
+		this.fromY = minY;
+	}
+	
+	public void setFromZ(int minZ)
+	{
+		this.fromZ = minZ;
+	}
+
+	public void setInitializeThread(Thread thread) {
+		this.initializeThread = thread;		
+	}
+
+	public void setLoopMode(boolean loop) {
+		this.loopMode = loop;
+	}
+
+	public void setOrient(ForgeDirection orientation) {
+		this.orient = orientation;		
+	}
+
+	public void setPlayer(EntityPlayer entityliving) {
+		this.player = entityliving;		
+	}
+
+	public void setRemoveModeDrop(boolean drop) {
+		this.removeModeDrop = drop;		
+	}
+
+	public void setRemoveModeIteration(boolean iterate) {
+		this.removeModeIteration = iterate;
+	}
+
+	public void setToX(int maxX) 
+	{
+		this.toX = maxX;
+	}
+	
+	public void setToY(int maxY)
+	{
+		this.toY = maxY;
+	}
+	
+	public void setToZ(int maxZ)
+	{
+		this.toZ = maxZ;
 	}
 }

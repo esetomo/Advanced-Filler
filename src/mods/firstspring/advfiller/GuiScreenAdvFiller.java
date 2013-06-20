@@ -17,9 +17,9 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class GuiScreenAdvFiller extends GuiScreen
 {
-	int left, right, up, down, forward, type;
-	int tileX, tileY, tileZ;
-	boolean loopMode, iterate, drop;
+	private int left, right, up, down, forward, type;
+	private int tileX, tileY, tileZ;
+	private boolean loopMode, iterate, drop;
 
 	public GuiScreenAdvFiller(Position pos, int left, int right, int up, int down, int forward, int type, boolean loop, boolean iterate, boolean drop)
 	{
@@ -29,9 +29,9 @@ public class GuiScreenAdvFiller extends GuiScreen
 		this.down = down;
 		this.forward = forward;
 		this.type = type;
-		this.tileX = (int) pos.x;
-		this.tileY = (int) pos.y;
-		this.tileZ = (int) pos.z;
+		this.tileX = (int) pos.getX();
+		this.tileY = (int) pos.getY();
+		this.tileZ = (int) pos.getZ();
 		this.loopMode = loop;
 		this.iterate = iterate;
 		this.drop = drop;

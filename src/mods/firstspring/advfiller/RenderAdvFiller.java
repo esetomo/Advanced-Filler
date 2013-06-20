@@ -13,16 +13,16 @@ public class RenderAdvFiller extends Render
 
 	public void renderAdvFiller(EntityRendererFiller e, double x, double y, double z, float f, float f1)
 	{
-		TileAdvFiller tile = e.filler;
-		if (!e.filler.doRender)
+		TileAdvFiller tile = e.getFiller();
+		if (!tile.isDoRender())
 			return;
 		System.out.println("render");
-		double fromX = -(tile.xCoord - tile.fromX);
-		double toX = -(tile.xCoord - tile.toX) + 1;
-		double fromY = -(tile.yCoord - tile.fromY);
-		double toY = -(tile.yCoord - tile.toY) + 1;
-		double fromZ = -(tile.zCoord - tile.fromZ);
-		double toZ = -(tile.zCoord - tile.toZ) + 1;
+		double fromX = -(tile.xCoord - tile.getFromX());
+		double toX = -(tile.xCoord - tile.getToX()) + 1;
+		double fromY = -(tile.yCoord - tile.getFromY());
+		double toY = -(tile.yCoord - tile.getToY()) + 1;
+		double fromZ = -(tile.zCoord - tile.getFromZ());
+		double toZ = -(tile.zCoord - tile.getToZ()) + 1;
 		GL11.glPushMatrix();
 		GL11.glTranslatef((float) x, (float) y, (float) z);
 		GL11.glDisable(GL11.GL_TEXTURE_2D);

@@ -9,8 +9,8 @@ import buildcraft.builders.TileMarker;
 
 public class TileRedMarker extends TileMarker implements IAreaProvider
 {
-	int xmin, ymin, zmin, xmax, ymax, zmax;
-	boolean hasPosition = false;
+	private int xmin, ymin, zmin, xmax, ymax, zmax;
+	private boolean hasPosition = false;
 
 	@Override
 	public int xMin()
@@ -79,12 +79,12 @@ public class TileRedMarker extends TileMarker implements IAreaProvider
 				filler = (TileAdvFiller) te;
 		if (filler == null)
 			return;
-		xmin = filler.fromX;
-		ymin = filler.fromY;
-		zmin = filler.fromZ;
-		xmax = filler.toX;
-		ymax = filler.toY;
-		zmax = filler.toZ;
+		xmin = filler.getFromX();
+		ymin = filler.getFromY();
+		zmin = filler.getFromZ();
+		xmax = filler.getToX();
+		ymax = filler.getToY();
+		zmax = filler.getToZ();
 	}
 
 	public List<TileEntity> getNeighborTileEntityList()
