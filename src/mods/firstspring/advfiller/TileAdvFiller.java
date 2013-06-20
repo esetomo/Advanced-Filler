@@ -100,8 +100,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		if (!worldObj.isRemote)
 		{
 			IAreaProvider a = null;
-			Position pos = new Position(xCoord, yCoord, zCoord, orient);
-			pos.moveForwards(1);
+			Position pos = new Position(xCoord, yCoord, zCoord, orient).moveForwards(1);
 			TileEntity tile = worldObj.getBlockTileEntity(pos.getX(), pos.getY(), pos.getZ());
 			if (tile instanceof IAreaProvider)
 				a = (IAreaProvider) tile;
@@ -127,8 +126,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 			break;
 		case WEST:
 		}
-		Position pos = new Position(xCoord, yCoord, zCoord, orient);
-		pos.moveForwards(1);
+		Position pos = new Position(xCoord, yCoord, zCoord, orient).moveForwards(1);
 		// System.out.println(pos.toString());
 		// System.out.println(a.xMin() + "," + a.yMin() + "," + a.zMin() + "," +
 		// a.xMax() + "," + a.yMax() + "," + a.zMax());
@@ -293,18 +291,19 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	{
 		if (bcLoaded)
 			BuildCraftProxy.proxy.getBox(this).reset();
-		Position pos1 = new Position(xCoord, yCoord, zCoord, orient);
-		pos1.moveForwards(1);
-		pos1.moveLeft(left);
-		pos1.moveDown(down);
-		if (pos1.getY() <= 0)
-			pos1.setY(1);
-		Position pos2 = new Position(xCoord, yCoord, zCoord, orient);
-		pos2.moveForwards(1 + forward);
-		pos2.moveRight(right);
-		pos2.moveUp(up);
-		if (pos2.getY() > 255)
-			pos2.setY(255);
+
+		Position pos1 =
+				new Position(xCoord, yCoord, zCoord, orient)
+					.moveForwards(1)
+					.moveLeft(left)
+					.moveDown(down);
+
+		Position pos2 =
+				new Position(xCoord, yCoord, zCoord, orient)
+					.moveForwards(1 + forward)
+					.moveRight(right)
+					.moveUp(up);
+
 		from = pos1.min(pos2);
 		to = pos1.max(pos2);
 	}

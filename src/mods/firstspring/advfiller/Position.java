@@ -19,108 +19,109 @@ import net.minecraftforge.common.ForgeDirection;
 
 public class Position
 {
-
-	private int x, y, z;
-	private ForgeDirection orientation;
+	private final int x, y, z;
+	private final ForgeDirection forwardDirection;
 
 	public Position(int ci, int cj, int ck)
 	{
 		x = ci;
 		y = cj;
 		z = ck;
-		orientation = ForgeDirection.UNKNOWN;
+		forwardDirection = ForgeDirection.UNKNOWN;
 	}
 
 	public Position(int ci, int cj, int ck, ForgeDirection corientation)
 	{
+		switch(corientation)
+		{
+		case NORTH:
+		case SOUTH:
+		case WEST:
+		case EAST:
+		case UNKNOWN:
+			// valid argument.
+			break;
+		default:
+			throw new IllegalArgumentException("corientation");
+		}
+
 		x = ci;
 		y = cj;
 		z = ck;
-		orientation = corientation;
+		forwardDirection = corientation;
 	}
 
-	public Position(Position p)
+	public int getX()
 	{
-		x = p.x;
-		y = p.y;
-		z = p.z;
-		orientation = p.orientation;
+		return this.x;
 	}
 
-	public void moveRight(int step)
+	public int getY()
 	{
-		switch (orientation)
-		{
-		case SOUTH:
-			x = x - step;
-			break;
-		case NORTH:
-			x = x + step;
-			break;
-		case EAST:
-			z = z + step;
-			break;
-		case WEST:
-			z = z - step;
-			break;
-		default:
-		}
+		return this.y;
 	}
 
-	public void moveLeft(int step)
+	public int getZ()
 	{
-		moveRight(-step);
+		return this.z;
 	}
 
-	public void moveForwards(int step)
+	public Position moveRight(int step)
 	{
-		switch (orientation)
-		{
-		case UP:
-			y = y + step;
-			break;
-		case DOWN:
-			y = y - step;
-			break;
-		case SOUTH:
-			z = z + step;
-			break;
-		case NORTH:
-			z = z - step;
-			break;
-		case EAST:
-			x = x + step;
-			break;
-		case WEST:
-			x = x - step;
-			break;
-		default:
-		}
+		if(forwardDirection == ForgeDirection.UNKNOWN)
+			throw new IllegalStateException("Cannot move unknown direction.");
+
+		// Y軸で+90度回転させると右側（getRotationの引数は回転軸と回転の向きの指定です）
+		ForgeDirection rightDirection =
+			forwardDirection.getRotation(ForgeDirection.UP);
+
+		return new Position(x + rightDirection.offsetX * step,
+							y + rightDirection.offsetY * step,
+							z + rightDirection.offsetZ * step,
+							forwardDirection);
 	}
 
-	public void moveBackwards(int step)
+	public Position moveLeft(int step)
 	{
-		moveForwards(-step);
+		return moveRight(-step);
 	}
 
-	public void moveUp(int step)
+	public Position moveForwards(int step)
 	{
-		switch (orientation)
-		{
-		case SOUTH:
-		case NORTH:
-		case EAST:
-		case WEST:
-			y = y + step;
-			break;
-		default:
-		}
+		if(forwardDirection == ForgeDirection.UNKNOWN)
+			throw new IllegalStateException("Cannot move unknown direction.");
 
+		return new Position(x + forwardDirection.offsetX * step,
+							y + forwardDirection.offsetY * step,
+							z + forwardDirection.offsetZ * step,
+							forwardDirection);
 	}
 
-	public void moveDown(int step)
+	public Position moveBackwards(int step)
 	{
-		moveUp(-step);
+		return moveForwards(-step);
+	}
+
+	public Position moveUp(int step)
+	{
+		if(forwardDirection == ForgeDirection.UNKNOWN)
+			throw new IllegalStateException("Cannot move unknown direction.");
+
+		int y2 = y + step;
+
+		// world border limit.
+		if (y2 <= 0)
+			y2 = 1;
+
+		if (y2 > 255)
+			y2 = 255;
+
+		return new Position(x, y2, z, forwardDirection);
+	}
+
+	public Position moveDown(int step)
+	{
+		return moveUp(-step);
 	}
 
 	@Override
@@ -159,24 +160,4 @@ public class Position
 	{
 		return x * y * z;
 	}
-
-	public int getX() 
-	{
-		return this.x;
-	}
-	
-	public int getY()
-	{
-		return this.y;
-	}
-	
-	public int getZ()
-	{
-		return this.z;
-	}
-
-	public void setY(int i) {
-		this.y = i;
-	}
-
 }
