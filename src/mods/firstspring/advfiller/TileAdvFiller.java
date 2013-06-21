@@ -100,7 +100,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		if (!worldObj.isRemote)
 		{
 			IAreaProvider a = null;
-			Position pos = new Position(xCoord, yCoord, zCoord, orient).moveForwards(1);
+			Position pos = getBasePosition();
 			TileEntity tile = worldObj.getBlockTileEntity(pos.getX(), pos.getY(), pos.getZ());
 			if (tile instanceof IAreaProvider)
 				a = (IAreaProvider) tile;
@@ -115,7 +115,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 	public void calculateMarker(IAreaProvider a)
 	{
-		Position pos = new Position(xCoord, yCoord, zCoord, orient).moveForwards(1);
+		Position pos = getBasePosition();
 
 		// System.out.println(pos.toString());
 		// System.out.println(a.xMin() + "," + a.yMin() + "," + a.zMin() + "," +
@@ -237,17 +237,8 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		if (bcLoaded)
 			BuildCraftProxy.proxy.getBox(this).reset();
 
-		Position pos1 =
-				new Position(xCoord, yCoord, zCoord, orient)
-					.moveForwards(1)
-					.moveLeft(left)
-					.moveDown(down);
-
-		Position pos2 =
-				new Position(xCoord, yCoord, zCoord, orient)
-					.moveForwards(1 + forward)
-					.moveRight(right)
-					.moveUp(up);
+		Position pos1 = getBasePosition().moveLeft(left).moveDown(down);
+		Position pos2 = getBasePosition().moveForwards(forward).moveRight(right).moveUp(up);
 
 		from = pos1.min(pos2);
 		to = pos1.max(pos2);
@@ -1161,5 +1152,11 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void setToZ(int maxZ)
 	{
 		this.toZ = maxZ;
+	}
+	
+	private Position getBasePosition()
+	{
+		//　設置ブロックの1マス前が範囲指定の基準点。
+		return new Position(xCoord, yCoord, zCoord, orient).moveForwards(1);
 	}
 }
