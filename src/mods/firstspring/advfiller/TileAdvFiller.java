@@ -113,98 +113,43 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		}
 	}
 
-	@SuppressWarnings("incomplete-switch")
 	public void calculateMarker(IAreaProvider a)
 	{
-		switch (orient)
-		{
-		case SOUTH:
-			break;
-		case NORTH:
-			break;
-		case EAST:
-			break;
-		case WEST:
-		}
 		Position pos = new Position(xCoord, yCoord, zCoord, orient).moveForwards(1);
+
 		// System.out.println(pos.toString());
 		// System.out.println(a.xMin() + "," + a.yMin() + "," + a.zMin() + "," +
 		// a.xMax() + "," + a.yMax() + "," + a.zMax());
-		int x, y, z;
-		// minX
-		if (a.xMin() < a.xMax())
-			x = pos.getX() - a.xMin();
-		else
-			x = pos.getX() - a.xMax();
-		switch (orient)
-		{
-		case SOUTH:
-			right = x;
-			break;
-		case NORTH:
-			left = x;
-			break;
-		case EAST:
-			break;
-		case WEST:
-			forward = x;
-		}
 
-		// maxX
-		if (a.xMin() < a.xMax())
-			x = a.xMax() - pos.getX();
-		else
-			x = a.xMin() - pos.getX();
+		final int minX = pos.getX() - Math.min(a.xMin(), a.xMax());
+		final int maxX = Math.max(a.xMax(), a.xMin()) - pos.getX();
+		final int minZ = pos.getZ() - Math.min(a.zMin(), a.zMax());
+		final int maxZ = Math.max(a.zMin(), a.zMax()) - pos.getZ();
+		
 		switch (orient)
 		{
 		case SOUTH:
-			left = x;
+			forward = maxZ;
+			left = maxX;
+			right = minX;
 			break;
 		case NORTH:
-			right = x;
+			forward = minZ;
+			left = minX;
+			right = maxX;
 			break;
 		case EAST:
-			forward = x;
+			forward = maxX;
+			left = minZ;
+			right = maxZ;
 			break;
 		case WEST:
-		}
-
-		// minZ
-		if (a.zMin() < a.zMax())
-			z = pos.getZ() - a.zMin();
-		else
-			z = pos.getZ() - a.zMax();
-		switch (orient)
-		{
-		case SOUTH:
-			break;
-		case NORTH:
-			forward = z;
-			break;
-		case EAST:
-			left = z;
-			break;
-		case WEST:
-			right = z;
-		}
-
-		// maxZ
-		if (a.zMin() < a.zMax())
-			z = a.zMax() - pos.getZ();
-		else
-			z = a.zMin() - pos.getZ();
-		switch (orient)
-		{
-		case SOUTH:
-			forward = z;
-			break;
-		case NORTH:
-			break;
-		case EAST:
-			right = z;
-			break;
-		case WEST:
-			left = z;
+			forward = minX;
+			left = maxZ;
+			right = minZ;
+		default:
+			// 横向きじゃないので異常
+			throw new IllegalStateException("Invalid orient");
 		}
 
 		// minY

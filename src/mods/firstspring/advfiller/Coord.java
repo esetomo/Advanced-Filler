@@ -2,11 +2,7 @@ package mods.firstspring.advfiller;
 
 public class Coord
 {
-	private int x, z;
-
-	private Coord()
-	{
-	}
+	private final int x, z;
 
 	public Coord(int x, int z)
 	{

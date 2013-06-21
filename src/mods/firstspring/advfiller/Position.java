@@ -132,12 +132,12 @@ public class Position
 
 	public Position min(Position p)
 	{
-		return new Position(p.x > x ? x : p.x, p.y > y ? y : p.y, p.z > z ? z : p.z);
+		return new Position(Math.min(p.x, x), Math.min(p.y, y), Math.min(p.z, z));
 	}
 
 	public Position max(Position p)
 	{
-		return new Position(p.x < x ? x : p.x, p.y < y ? y : p.y, p.z < z ? z : p.z);
+		return new Position(Math.max(p.x, x), Math.max(p.y, y), Math.max(p.z, z));
 	}
 
 	@Override
