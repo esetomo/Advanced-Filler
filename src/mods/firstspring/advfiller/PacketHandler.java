@@ -50,12 +50,6 @@ public class PacketHandler implements IPacketHandler
 			if (tile instanceof TileAdvFiller)
 			{
 				TileAdvFiller filler = (TileAdvFiller) tile;
-				filler.setFromX(minX);
-				filler.setFromY(minY);
-				filler.setFromZ(minZ);
-				filler.setToX(maxX);
-				filler.setToY(maxY);
-				filler.setToZ(maxZ);
 				if (filler.getBcLoaded())
 				{
 					BuildCraftProxy.proxy.getBox(filler).deleteLasers();

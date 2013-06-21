@@ -53,10 +53,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	// used on chunkloading message
 	private EntityPlayer player;
 	private boolean doRender = false;
-	private int left, right, up, down, forward;
+	private GUIAreaProvider area;
 	private int type;// 0 : Quarry Mode 1 : Remove Mode 2 : Filling Mode 3 : Flatten
 				// Mode 4 : Exclusive Remove Mode 5 : TofuBuild Mode
-	private int fromX, fromY, fromZ, toX, toY, toZ;
 	private int tick = 0;
 	private int rate;
 	private boolean initialized = false, disabled = false, finished = false;
@@ -65,7 +64,6 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	private boolean removeModeDrop = false;
 	private boolean removeModeIteration = false;// false:descend true:ascend
 	private boolean ic2EnergyNet = false;
-	private Position from, to;
 	private List<Position> removeList;
 	private ListIterator removeListIterator;
 	private List<Position> fillList;
@@ -87,11 +85,8 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		powerProvider.configure(20, 1, 1000, 25, 1000);
 		powerProvider.configurePowerPerdition(0, 100);
 		// configure for quarry mode
-		left = 5;
-		right = 5;
-		up = 0;
-		down = 0;
-		forward = 10;
+		
+		area = new GUIAreaProvider(xCoord, yCoord, zCoord, ForgeDirection.NORTH, 5, 5, 0, 0, 10);
 		type = 0;
 	}
 
@@ -117,61 +112,13 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		}
 	}
 
-	public boolean calculateMarker(IAreaProvider a)
+	public boolean calculateMarker(IAreaProvider src)
 	{
-		Position pos = getBasePosition();
-
-		final int minX = pos.getX() - Math.min(a.xMin(), a.xMax());
-		final int maxX = Math.max(a.xMax(), a.xMin()) - pos.getX();
-		final int minY = pos.getY() - Math.min(a.yMin(), a.yMax());
-		final int maxY = Math.max(a.yMax(), a.yMin()) - pos.getY();
-		final int minZ = pos.getZ() - Math.min(a.zMin(), a.zMax());
-		final int maxZ = Math.max(a.zMin(), a.zMax()) - pos.getZ();
+		GUIAreaProvider dest = GUIAreaProvider.fromAreaProvider(src, xCoord, yCoord, zCoord, orient);
+		if(dest == null)
+			return false;
 		
-		for (int v : new int[]{minX, maxX, minY, maxY, minZ, maxZ})
-		{
-			if(v < 0 || v > AdvFiller.maxDistance)
-				return false; // 設定値範囲外
-		}
-		
-		switch (orient)
-		{
-		case SOUTH:
-			if(minZ != 0) // 手前側の面は基準点を含む必要あり
-				return false;
-			forward = maxZ;
-			left = maxX;
-			right = minX;
-			break;
-		case NORTH:
-			if(maxZ != 0)
-				return false;
-			forward = minZ;
-			left = minX;
-			right = maxX;
-			break;
-		case EAST:
-			if(minX != 0)
-				return false;
-			forward = maxX;
-			left = minZ;
-			right = maxZ;
-			break;
-		case WEST:
-			if(maxX != 0)
-				return false;
-			forward = minX;
-			left = maxZ;
-			right = minZ;
-			break;
-		default:
-			// 横向きじゃないので異常
-			throw new IllegalStateException("Invalid orient");
-		}
-
-		down = minY;
-		up = maxY;
-		
+		this.area = dest;
 		return true;
 	}
 
@@ -182,8 +129,16 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		orient = ForgeDirection.values()[worldObj.getBlockMetadata(xCoord, yCoord, zCoord)].getOpposite();
 		if (orient == ForgeDirection.UP || orient == ForgeDirection.DOWN || orient == ForgeDirection.UNKNOWN)
 			return;
-		setArea();
-		setBox();
+
+		area = area.rotateTo(orient);
+		
+		if (bcLoaded)
+		{
+			buildcraft.core.Box box = BuildCraftProxy.proxy.getBox(this);
+			box.reset();
+			box.initialize(area);
+		}
+
 		initializeThread = new Thread(new AdvFillerInitializeThread(this));
 		initializeThread.start();
 		MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
@@ -236,38 +191,10 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		this.disabled = false;
 	}
 
-	public void setBox()
-	{
-		fromX = (int) from.getX();
-		fromY = (int) from.getY();
-		fromZ = (int) from.getZ();
-		toX = (int) to.getX();
-		toY = (int) to.getY();
-		toZ = (int) to.getZ();
-		if (bcLoaded)
-			BuildCraftProxy.proxy.getBox(this).initialize(fromX, fromY, fromZ, toX, toY, toZ);
-	}
-
-	public void setArea()
-	{
-		if (bcLoaded)
-			BuildCraftProxy.proxy.getBox(this).reset();
-
-		Position pos1 = getBasePosition().moveLeft(left).moveDown(down);
-		Position pos2 = getBasePosition().moveForwards(forward).moveRight(right).moveUp(up);
-
-		from = pos1.min(pos2);
-		to = pos1.max(pos2);
-	}
-
 	// パケットで使用
 	public void setArea(int left, int right, int up, int down, int forward, int type)
 	{
-		this.left = left;
-		this.right = right;
-		this.up = up;
-		this.down = down;
-		this.forward = forward;
+		this.area = this.area.rangeTo(left, right, up, down, forward);
 		this.type = type;
 	}
 
@@ -355,35 +282,36 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 	public boolean checkFrame(int x, int y, int z)
 	{
-		if (y == fromY || y == toY)
-			return (x == fromX || x == toX) || (z == fromZ || z == toZ);
+		if (y == area.yMin() || y == area.yMax())
+			return (x == area.xMin() || x == area.xMax()) || (z == area.zMin() || z == area.zMax());
 		else
-			return (x == fromX || x == toX) && (z == fromZ || z == toZ);
+			return (x == area.xMin() || x == area.xMax()) && (z == area.zMin() || z == area.zMax());
 	}
 
 	void calculateFrame()
 	{
 		frameBuildList = new ArrayList();
 		removeList = new ArrayList();
-		fromY = (int) yCoord;
-		toY = (int) yCoord + 4;
-		if (toY > 255)
+				
+		area = area.quarryFrame();
+		
+		if (area.yMax() > 255)
 		{
 			finished = true;
 			return;
 		}
-		if (toX - fromX < 2 || toZ - fromZ < 2)
+		if (area.xMax() - area.xMin() < 2 || area.zMax() - area.zMin() < 2)
 		{
 			finished = true;
 			return;
 		}
 		if (bcLoaded)
-			BuildCraftProxy.proxy.getBox(this).initialize(fromX, fromY, fromZ, toX, toY, toZ);
-		for (int y = fromY; y <= toY; y++)
+			BuildCraftProxy.proxy.getBox(this).initialize(area);
+		for (int y = area.yMin(); y <= area.yMax(); y++)
 		{
-			for (int x = fromX; x <= toX; x++)
+			for (int x = area.xMin(); x <= area.xMax(); x++)
 			{
-				for (int z = fromZ; z <= toZ; z++)
+				for (int z = area.zMin(); z <= area.zMax(); z++)
 				{
 					if (checkFrame(x, y, z))
 					{
@@ -433,9 +361,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		quarryList = new ArrayList();
 		for (int y = yCoord - 1; y >= 1; y--)
 		{
-			for (int x = fromX + 1; x <= toX - 1; x++)
+			for (int x = area.xMin() + 1; x <= area.xMax() - 1; x++)
 			{
-				for (int z = fromZ + 1; z <= toZ - 1; z++)
+				for (int z = area.zMin() + 1; z <= area.zMax() - 1; z++)
 				{
 					if (checkBreakable(x, y, z))
 						if (!AdvFiller.fillingSet.contains(worldObj.getBlockId(x, y, z)))
@@ -500,9 +428,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void createRemoveList()
 	{
 		removeList = new ArrayList();
-		for (int y = fromY; y <= toY; y++)
-			for (int x = fromX; x <= toX; x++)
-				for (int z = fromZ; z <= toZ; z++)
+		for (int y = area.yMin(); y <= area.yMax(); y++)
+			for (int x = area.xMin(); x <= area.xMax(); x++)
+				for (int z = area.zMin(); z <= area.zMax(); z++)
 					if (BlockLib.canChangeBlock(worldObj, x, y, z) && worldObj.getBlockId(x, y, z) != 0)
 						removeList.add(new Position(x, y, z));
 		if (this.removeModeIteration)
@@ -602,9 +530,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void createFillList()
 	{
 		fillList = new ArrayList();
-		for (int y = fromY; y <= toY; y++)
-			for (int x = fromX; x <= toX; x++)
-				for (int z = fromZ; z <= toZ; z++)
+		for (int y = area.yMin(); y <= area.yMax(); y++)
+			for (int x = area.xMin(); x <= area.xMax(); x++)
+				for (int z = area.zMin(); z <= area.zMax(); z++)
 					if (AdvFiller.fillingSet.contains(worldObj.getBlockId(x, y, z)))
 						fillList.add(new Position(x, y, z));
 		fillListIterator = fillList.listIterator();
@@ -682,8 +610,8 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		removeList = new ArrayList();
 		fillList = new ArrayList();
 		for (int y = yCoord; y <= 255; y++)
-			for (int x = fromX; x <= toX; x++)
-				for (int z = fromZ; z <= toZ; z++)
+			for (int x = area.xMin(); x <= area.xMax(); x++)
+				for (int z = area.zMin(); z <= area.xMax(); z++)
 				{
 					int blockID = worldObj.getBlockId(x, y, z);
 					if (BlockLib.canChangeBlock(blockID, worldObj, x, y, z) && blockID != 0)
@@ -693,8 +621,8 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		removeListIterator = removeList.listIterator();
 		ignoreCoordSet = new HashSet();
 		for (int y = yCoord - 1; y > 0; y--)
-			for (int x = fromX; x <= toX; x++)
-				for (int z = fromZ; z <= toZ; z++)
+			for (int x = area.xMin(); x <= area.xMax(); x++)
+				for (int z = area.zMin(); z <= area.zMax(); z++)
 					if (true)
 					{
 						if (AdvFiller.fillingSet.contains(worldObj.getBlockId(x, y, z)))
@@ -766,9 +694,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 			finished = true;
 			return;
 		}
-		for (int y = fromY; y <= toY; y++)
-			for (int x = fromX; x <= toX; x++)
-				for (int z = fromZ; z <= toZ; z++)
+		for (int y = area.yMin(); y <= area.yMax(); y++)
+			for (int x = area.xMin(); x <= area.xMax(); x++)
+				for (int z = area.zMin(); z <= area.zMax(); z++)
 					if (worldObj.getBlockId(x, y, z) == removeID)
 						removeList.add(new Position(x, y, z));
 		if (this.removeModeIteration)
@@ -782,23 +710,23 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void createTofuBuildList()
 	{
 		fillList = new ArrayList();
-		for (int y = fromY; y <= toY; y++)
+		for (int y = area.yMin(); y <= area.yMax(); y++)
 		{
-			if (y == fromY || y == toY)
+			if (y == area.yMin() || y == area.yMax())
 			{
-				for (int x = fromX; x <= toX; x++)
+				for (int x = area.xMin(); x <= area.xMax(); x++)
 				{
-					for (int z = fromZ; z <= toZ; z++)
+					for (int z = area.zMin(); z <= area.zMax(); z++)
 					{
 						if (worldObj.getBlockId(x, y, z) == 0)
 							fillList.add(new Position(x, y, z));
 					}
 				}
 			} else
-				for (int x = fromX; x <= toX; x++)
-					for (int z = fromZ; z <= toZ; z++)
+				for (int x = area.xMin(); x <= area.xMax(); x++)
+					for (int z = area.zMin(); z <= area.zMax(); z++)
 					{
-						if (((x == fromX || x == toX) || (z == fromZ || z == toZ)) && worldObj.getBlockId(x, y, z) == 0)
+						if (((x == area.xMin() || x == area.xMax()) || (z == area.zMin() || z == area.zMax())) && worldObj.getBlockId(x, y, z) == 0)
 							fillList.add(new Position(x, y, z));
 					}
 		}
@@ -809,11 +737,13 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void readFromNBT(NBTTagCompound nbt)
 	{
 		super.readFromNBT(nbt);
-		left = nbt.getInteger("left");
-		right = nbt.getInteger("right");
-		up = nbt.getInteger("up");
-		down = nbt.getInteger("down");
-		forward = nbt.getInteger("forward");
+		
+		this.area = this.area.rangeTo(nbt.getInteger("left"),
+									  nbt.getInteger("right"),
+									  nbt.getInteger("up"),
+									  nbt.getInteger("down"),
+									  nbt.getInteger("forward"));
+		
 		type = nbt.getInteger("type");
 		loopMode = nbt.getBoolean("loop");
 		removeModeIteration = nbt.getBoolean("iterate");
@@ -828,11 +758,11 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void writeToNBT(NBTTagCompound nbt)
 	{
 		super.writeToNBT(nbt);
-		nbt.setInteger("left", left);
-		nbt.setInteger("right", right);
-		nbt.setInteger("up", up);
-		nbt.setInteger("down", down);
-		nbt.setInteger("forward", forward);
+		nbt.setInteger("left", area.getLeft());
+		nbt.setInteger("right", area.getRight());
+		nbt.setInteger("up", area.getUp());
+		nbt.setInteger("down", area.getDown());
+		nbt.setInteger("forward", area.getForward());
 		nbt.setInteger("type", type);
 		nbt.setBoolean("loop", loopMode);
 		nbt.setBoolean("iterate", removeModeIteration);
@@ -853,20 +783,20 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 		try
 		{
-			dos.writeInt(fromX);
-			dos.writeInt(fromY);
-			dos.writeInt(fromZ);
-			dos.writeInt(toX);
-			dos.writeInt(toY);
-			dos.writeInt(toZ);
+			dos.writeInt(area.xMin());
+			dos.writeInt(area.yMin());
+			dos.writeInt(area.zMin());
+			dos.writeInt(area.xMax());
+			dos.writeInt(area.yMax());
+			dos.writeInt(area.zMax());
 			dos.writeInt(xCoord);
 			dos.writeInt(yCoord);
 			dos.writeInt(zCoord);
-			dos.writeInt(left);
-			dos.writeInt(right);
-			dos.writeInt(up);
-			dos.writeInt(down);
-			dos.writeInt(forward);
+			dos.writeInt(area.getLeft());
+			dos.writeInt(area.getRight());
+			dos.writeInt(area.getUp());
+			dos.writeInt(area.getDown());
+			dos.writeInt(area.getForward());
 			dos.writeInt(type);
 			dos.writeBoolean(loopMode);
 			dos.writeBoolean(finished);
@@ -915,9 +845,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		ChunkCoordIntPair myChunk = new ChunkCoordIntPair(xCoord >> 4, zCoord >> 4);
 		chunks.add(myChunk);
 		ForgeChunkManager.forceChunk(this.chunkTicket, myChunk);
-		for (int chunkX = fromX >> 4; chunkX <= toX >> 4; chunkX++)
+		for (int chunkX = area.xMin() >> 4; chunkX <= area.xMax() >> 4; chunkX++)
 		{
-			for (int chunkZ = fromZ >> 4; chunkZ <= toZ >> 4; chunkZ++)
+			for (int chunkZ = area.zMin() >> 4; chunkZ <= area.zMax() >> 4; chunkZ++)
 			{
 				ChunkCoordIntPair chunk = new ChunkCoordIntPair(chunkX, chunkZ);
 				ForgeChunkManager.forceChunk(this.chunkTicket, chunk);
@@ -1013,59 +943,6 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		return this.doLoop;
 	}
 
-	public int getLeft() 
-	{
-		return this.left;
-	}
-
-	public int getRight() 
-	{
-		return this.right;
-	}
-
-	public int getUp()
-	{
-		return this.up;
-	}
-
-	public int getDown() {
-		return this.down;
-	}
-
-	public int getForward() {
-		return this.forward;
-	}
-
-	public int getFromX() 
-	{
-		return this.fromX;
-	}
-
-	public int getToX() 
-	{
-		return this.toX;
-	}
-	
-	public int getFromY() 
-	{
-		return this.fromY;
-	}
-
-	public int getToY() 
-	{
-		return this.toY;
-	}
-	
-	public int getFromZ() 
-	{
-		return this.fromZ;
-	}
-
-	public int getToZ() 
-	{
-		return this.toZ;
-	}
-
 	public Thread getInitializeThread() 
 	{
 		return this.initializeThread;
@@ -1116,21 +993,6 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		this.doLoop = b;
 	}
 
-	public void setFromX(int minX) 
-	{
-		this.fromX = minX;
-	}
-	
-	public void setFromY(int minY)
-	{
-		this.fromY = minY;
-	}
-	
-	public void setFromZ(int minZ)
-	{
-		this.fromZ = minZ;
-	}
-
 	public void setInitializeThread(Thread thread) {
 		this.initializeThread = thread;		
 	}
@@ -1154,25 +1016,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void setRemoveModeIteration(boolean iterate) {
 		this.removeModeIteration = iterate;
 	}
-
-	public void setToX(int maxX) 
-	{
-		this.toX = maxX;
-	}
 	
-	public void setToY(int maxY)
+	public GUIAreaProvider getArea()
 	{
-		this.toY = maxY;
-	}
-	
-	public void setToZ(int maxZ)
-	{
-		this.toZ = maxZ;
-	}
-	
-	private Position getBasePosition()
-	{
-		//　設置ブロックの1マス前が範囲指定の基準点。
-		return new Position(xCoord, yCoord, zCoord, orient).moveForwards(1);
+		return this.area;
 	}
 }

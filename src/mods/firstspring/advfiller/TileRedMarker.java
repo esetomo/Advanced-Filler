@@ -79,12 +79,14 @@ public class TileRedMarker extends TileMarker implements IAreaProvider
 				filler = (TileAdvFiller) te;
 		if (filler == null)
 			return;
-		xmin = filler.getFromX();
-		ymin = filler.getFromY();
-		zmin = filler.getFromZ();
-		xmax = filler.getToX();
-		ymax = filler.getToY();
-		zmax = filler.getToZ();
+		
+		IAreaProvider area = filler.getArea();
+		xmin = area.xMin();
+		ymin = area.yMin();
+		zmin = area.zMin();
+		xmax = area.xMax();
+		ymax = area.yMax();
+		zmax = area.zMax();
 	}
 
 	public List<TileEntity> getNeighborTileEntityList()

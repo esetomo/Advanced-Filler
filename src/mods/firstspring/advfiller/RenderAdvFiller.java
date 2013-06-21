@@ -8,6 +8,8 @@ import net.minecraft.entity.Entity;
 
 import org.lwjgl.opengl.GL11;
 
+import buildcraft.api.core.IAreaProvider;
+
 public class RenderAdvFiller extends Render
 {
 
@@ -17,12 +19,14 @@ public class RenderAdvFiller extends Render
 		if (!tile.isDoRender())
 			return;
 		System.out.println("render");
-		double fromX = -(tile.xCoord - tile.getFromX());
-		double toX = -(tile.xCoord - tile.getToX()) + 1;
-		double fromY = -(tile.yCoord - tile.getFromY());
-		double toY = -(tile.yCoord - tile.getToY()) + 1;
-		double fromZ = -(tile.zCoord - tile.getFromZ());
-		double toZ = -(tile.zCoord - tile.getToZ()) + 1;
+		
+		IAreaProvider area = tile.getArea();
+		double fromX = -(tile.xCoord - area.xMin());
+		double toX = -(tile.xCoord - area.xMax()) + 1;
+		double fromY = -(tile.yCoord - area.yMin());
+		double toY = -(tile.yCoord - area.yMax()) + 1;
+		double fromZ = -(tile.zCoord - area.zMin());
+		double toZ = -(tile.zCoord - area.zMax()) + 1;
 		GL11.glPushMatrix();
 		GL11.glTranslatef((float) x, (float) y, (float) z);
 		GL11.glDisable(GL11.GL_TEXTURE_2D);

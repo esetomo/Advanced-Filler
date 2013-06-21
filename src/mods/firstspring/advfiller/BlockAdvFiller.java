@@ -138,7 +138,8 @@ public class BlockAdvFiller extends BlockContainer
 		if (!world.isRemote)
 			return true;
 		TileAdvFiller tile = (TileAdvFiller) world.getBlockTileEntity(i, j, k);
-		CommonProxy.proxy.openGui(i, j, k, tile.getLeft(), tile.getRight(), tile.getUp(), tile.getDown(), tile.getForward(), tile.getType(), tile.isLoopMode(), tile.isRemoveModeIteration(), tile.isRemoveModeDrop());
+		GUIAreaProvider area = tile.getArea();
+		CommonProxy.proxy.openGui(i, j, k, area.getLeft(), area.getRight(), area.getUp(), area.getDown(), area.getForward(), tile.getType(), tile.isLoopMode(), tile.isRemoveModeIteration(), tile.isRemoveModeDrop());
 		return true;
 	}
 
