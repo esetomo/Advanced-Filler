@@ -111,9 +111,9 @@ public class GUIAreaProvider implements IAreaProvider
 		return new GUIAreaProvider(x, y, z, orient, left, right, maxY, minY, forward);
 	}
 	
-	public GUIAreaProvider rotateTo(ForgeDirection orient)
+	public GUIAreaProvider moveTo(int x, int y, int z, ForgeDirection orient)
 	{
-		return new GUIAreaProvider(this.x, this.y, this.z, orient, this.left, this.right, this.up, this.down, this.forward);
+		return new GUIAreaProvider(x, y, z, orient, this.left, this.right, this.up, this.down, this.forward);
 	}
 
 	public GUIAreaProvider rangeTo(int left, int right, int up, int down, int forward) {

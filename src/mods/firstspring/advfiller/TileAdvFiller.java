@@ -95,6 +95,8 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		if (worldObj.isRemote)
 			return;
 
+		area = new GUIAreaProvider(xCoord, yCoord, zCoord, orient, 5, 5, 0, 0, 10);
+
 		for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS)
 		{
 			TileEntity tile = worldObj.getBlockTileEntity(xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ);
@@ -130,7 +132,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		if (orient == ForgeDirection.UP || orient == ForgeDirection.DOWN || orient == ForgeDirection.UNKNOWN)
 			return;
 
-		area = area.rotateTo(orient);
+		area = area.moveTo(xCoord, yCoord, zCoord, orient);
 		
 		if (bcLoaded)
 		{
