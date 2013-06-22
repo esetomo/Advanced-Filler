@@ -32,6 +32,9 @@ public class Position
 
 	public Position(int ci, int cj, int ck, ForgeDirection corientation)
 	{
+		if(corientation == null)
+			corientation = ForgeDirection.UNKNOWN;
+		
 		switch(corientation)
 		{
 		case NORTH:

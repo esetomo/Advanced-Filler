@@ -6,6 +6,7 @@ import net.minecraft.network.INetworkManager;
 import net.minecraft.network.packet.Packet250CustomPayload;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeDirection;
 import buildcraft.api.core.LaserKind;
 
 import com.google.common.io.ByteArrayDataInput;
@@ -22,18 +23,14 @@ public class PacketHandler implements IPacketHandler
 		// Stringを==で比較しちゃいけないよ、俺は迂闊だった
 		if (packet.channel.equals("advfiller_client"))
 		{
-			int minX, minY, minZ, maxX, maxY, maxZ, tileX, tileY, tileZ, left, right, up, down, forward, type;
+			int tileX, tileY, tileZ, left, right, up, down, forward, type;
+			ForgeDirection orient;
 			boolean loop, finished, disabled, iterate, drop;
 			ByteArrayDataInput dat = ByteStreams.newDataInput(packet.data);
-			minX = dat.readInt();
-			minY = dat.readInt();
-			minZ = dat.readInt();
-			maxX = dat.readInt();
-			maxY = dat.readInt();
-			maxZ = dat.readInt();
 			tileX = dat.readInt();
 			tileY = dat.readInt();
 			tileZ = dat.readInt();
+			orient = ForgeDirection.getOrientation(dat.readInt());
 			left = dat.readInt();
 			right = dat.readInt();
 			up = dat.readInt();
@@ -50,14 +47,17 @@ public class PacketHandler implements IPacketHandler
 			if (tile instanceof TileAdvFiller)
 			{
 				TileAdvFiller filler = (TileAdvFiller) tile;
+				GUIAreaProvider area = new GUIAreaProvider(tileX, tileY, tileZ, orient, left, right, up, down, forward); 
+				
 				if (filler.getBcLoaded())
 				{
 					BuildCraftProxy.proxy.getBox(filler).deleteLasers();
-					BuildCraftProxy.proxy.getBox(filler).initialize(minX, minY, minZ, maxX, maxY, maxZ);
+					BuildCraftProxy.proxy.getBox(filler).initialize(area);
 					if (AdvFiller.bcFrameRenderer)
 						BuildCraftProxy.proxy.getBox(filler).createLasers(world, LaserKind.Stripes);
 				}
-				filler.setArea(left, right, up, down, forward, type);
+				filler.setArea(area);
+				filler.setType(type);
 				filler.setLoopMode(loop);
 				filler.setFinished(finished);
 				filler.setDisabled(disabled);
@@ -102,7 +102,8 @@ public class PacketHandler implements IPacketHandler
 				TileAdvFiller filler = (TileAdvFiller) tile;
 				filler.setPlayer(entityplayer);
 				filler.setDoLoop(false);
-				filler.setArea(left, right, up, down, forward, type);
+				filler.setArea(left, right, up, down, forward);
+				filler.setType(type);
 				filler.setLoopMode(loop);
 				filler.setRemoveModeIteration(iterate);
 				filler.setRemoveModeDrop(drop);

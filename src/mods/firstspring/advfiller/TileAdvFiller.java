@@ -86,7 +86,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		powerProvider.configurePowerPerdition(0, 100);
 		// configure for quarry mode
 		
-		area = new GUIAreaProvider(xCoord, yCoord, zCoord, ForgeDirection.NORTH, 5, 5, 0, 0, 10);
+		area = new GUIAreaProvider(0, 0, 0, null, 5, 5, 0, 0, 10);
 		type = 0;
 	}
 
@@ -94,8 +94,6 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	{
 		if (worldObj.isRemote)
 			return;
-
-		area = new GUIAreaProvider(xCoord, yCoord, zCoord, orient, 5, 5, 0, 0, 10);
 
 		for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS)
 		{
@@ -131,8 +129,6 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		orient = ForgeDirection.values()[worldObj.getBlockMetadata(xCoord, yCoord, zCoord)].getOpposite();
 		if (orient == ForgeDirection.UP || orient == ForgeDirection.DOWN || orient == ForgeDirection.UNKNOWN)
 			return;
-
-		area = area.moveTo(xCoord, yCoord, zCoord, orient);
 		
 		if (bcLoaded)
 		{
@@ -194,9 +190,18 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	}
 
 	// パケットで使用
-	public void setArea(int left, int right, int up, int down, int forward, int type)
+	public void setArea(GUIAreaProvider area)
+	{
+		this.area = area;
+	}
+	
+	public void setArea(int left, int right, int up, int down, int forward)
 	{
 		this.area = this.area.rangeTo(left, right, up, down, forward);
+	}
+	
+	public void setType(int type)
+	{
 		this.type = type;
 	}
 
@@ -228,6 +233,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public void updateEntity()
 	{
 		super.updateEntity();
+				
 		if (worldObj.isRemote && (!AdvFiller.bcFrameRenderer || !bcLoaded))
 		{
 			// 描画用エンティティがスポーンしてない場合はスポーンさせる
@@ -785,15 +791,10 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 		try
 		{
-			dos.writeInt(area.xMin());
-			dos.writeInt(area.yMin());
-			dos.writeInt(area.zMin());
-			dos.writeInt(area.xMax());
-			dos.writeInt(area.yMax());
-			dos.writeInt(area.zMax());
 			dos.writeInt(xCoord);
 			dos.writeInt(yCoord);
 			dos.writeInt(zCoord);
+			dos.writeInt(orient.ordinal());
 			dos.writeInt(area.getLeft());
 			dos.writeInt(area.getRight());
 			dos.writeInt(area.getUp());

@@ -26,6 +26,9 @@ public class GUIAreaProvider implements IAreaProvider
 	
 	public GUIAreaProvider(int x, int y, int z, ForgeDirection orient, int left, int right, int up, int down, int forward)
 	{
+		if(orient == null || orient == ForgeDirection.UNKNOWN) // 方向未取得の場合はとりあえず北向きで計算
+			orient = ForgeDirection.NORTH;
+		
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -54,6 +57,9 @@ public class GUIAreaProvider implements IAreaProvider
 	
 	public static GUIAreaProvider fromAreaProvider(IAreaProvider a, int x, int y, int z, ForgeDirection orient)
 	{
+		if(orient == null || orient == ForgeDirection.UNKNOWN) // 方向未取得の場合はとりあえず北向きで計算
+			orient = ForgeDirection.NORTH;
+		
 		Position pos = new Position(x, y, z, orient).moveForwards(1);
 
 		final int minX = pos.getX() - Math.min(a.xMin(), a.xMax());
