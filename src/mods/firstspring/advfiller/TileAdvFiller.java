@@ -16,7 +16,9 @@ import java.util.Set;
 import mods.firstspring.advfiller.lib.BlockLib;
 import mods.firstspring.advfiller.lib.BuildCraftProxy;
 import net.minecraft.block.Block;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -25,12 +27,14 @@ import net.minecraft.network.packet.Packet250CustomPayload;
 import net.minecraft.network.packet.Packet3Chat;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.World;
 import net.minecraftforge.common.FakePlayerFactory;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.common.MinecraftForge;
 import buildcraft.api.core.IAreaProvider;
+import buildcraft.api.core.LaserKind;
 import buildcraft.api.power.IPowerProvider;
 import buildcraft.api.power.IPowerReceptor;
 import buildcraft.api.power.PowerFramework;
@@ -38,6 +42,8 @@ import buildcraft.api.transport.IPipeEntry;
 import buildcraft.api.transport.IPipedItem;
 
 import com.google.common.collect.Sets;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteStreams;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.network.PacketDispatcher;
@@ -180,23 +186,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		// 蔵側で実行すると表示の更新が行われる(結構重いので注意)
 		worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
 	}
-
-	// パケットで使用
-	public void setArea(GUIAreaProvider area)
-	{
-		this.area = area;
-	}
 	
-	public void setArea(int left, int right, int up, int down, int forward)
-	{
-		this.area = this.area.rangeTo(left, right, up, down, forward);
-	}
-	
-	public void setType(int type)
-	{
-		this.type = type;
-	}
-
 	@Override
 	public void setPowerProvider(IPowerProvider provider)
 	{
@@ -810,6 +800,124 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		return packet;
 	}
 
+	public static void receivedClientPacket(Packet250CustomPayload packet) {
+		int tileX, tileY, tileZ, left, right, up, down, forward, type;
+		ForgeDirection orient;
+		boolean loop, finished, enabled, iterate, drop;
+		ByteArrayDataInput dat = ByteStreams.newDataInput(packet.data);
+		
+		tileX = dat.readInt();
+		tileY = dat.readInt();
+		tileZ = dat.readInt();
+		orient = ForgeDirection.getOrientation(dat.readInt());
+		
+		left = dat.readInt();
+		right = dat.readInt();
+		up = dat.readInt();
+		down = dat.readInt();
+		forward = dat.readInt();
+		
+		type = dat.readInt();
+		loop = dat.readBoolean();
+		finished = dat.readBoolean();
+		enabled = dat.readBoolean();
+		iterate = dat.readBoolean();
+		drop = dat.readBoolean();
+		
+		World world = CommonProxy.proxy.getWorld();
+		TileEntity tile = world.getBlockTileEntity(tileX, tileY, tileZ);
+		if (tile instanceof TileAdvFiller)
+		{
+			TileAdvFiller filler = (TileAdvFiller) tile;
+			filler.loadPacketData(tileX, tileY, tileZ, orient,
+								  left, right, up, down, forward,
+								  type, loop, finished, enabled, iterate, drop,
+								  world);
+		}
+		// マシンのフロントの表示を更新する
+		world.markBlockForUpdate(tileX, tileY, tileZ);		
+	}
+
+	private void loadPacketData(
+			int tileX, int tileY, int tileZ, ForgeDirection orient,
+			int left, int right, int up, int down, int forward,
+			int type, boolean loop, boolean finished, boolean enabled, boolean iterate, boolean drop,
+			World world) 
+	{
+		this.area = new GUIAreaProvider(tileX, tileY, tileZ, orient, left, right, up, down, forward); 
+		
+		if (getBcLoaded())
+		{
+			BuildCraftProxy.proxy.getBox(this).deleteLasers();
+			BuildCraftProxy.proxy.getBox(this).initialize(this.area);
+			if (AdvFiller.bcFrameRenderer)
+				BuildCraftProxy.proxy.getBox(this).createLasers(world, LaserKind.Stripes);
+		}
+		
+		this.type = type;
+		this.loopMode = loop;
+		this.finished = finished;
+		this.enabled = enabled;
+		this.removeModeIteration = iterate;
+		this.removeModeDrop = drop;
+	}
+	
+	public static void recevedServerPacket(Packet250CustomPayload packet, Player player) {
+		int x, y, z, left, right, up, down, forward, type;
+		boolean loop, iterate, drop;
+		ByteArrayDataInput dat = ByteStreams.newDataInput(packet.data);
+		x = dat.readInt();
+		y = dat.readInt();
+		z = dat.readInt();
+		left = dat.readInt();
+		if (left > AdvFiller.maxDistance)
+			left = AdvFiller.maxDistance;
+		right = dat.readInt();
+		if (right > AdvFiller.maxDistance)
+			right = AdvFiller.maxDistance;
+		up = dat.readInt();
+		if (up > AdvFiller.maxDistance)
+			up = AdvFiller.maxDistance;
+		down = dat.readInt();
+		if (down > AdvFiller.maxDistance)
+			down = AdvFiller.maxDistance;
+		forward = dat.readInt();
+		if (forward > AdvFiller.maxDistance)
+			forward = AdvFiller.maxDistance;
+		type = dat.readInt();
+		loop = dat.readBoolean();
+		iterate = dat.readBoolean();
+		drop = dat.readBoolean();
+		EntityPlayerMP entityplayer = (EntityPlayerMP) player;
+		World world = entityplayer.worldObj;
+		TileEntity tile = world.getBlockTileEntity(x, y, z);
+		if (tile instanceof TileAdvFiller)
+		{
+			TileAdvFiller filler = (TileAdvFiller) tile;
+			filler.loadPacketData(left, right, up, down, forward, 
+								  type, loop, iterate, drop,
+								  entityplayer);
+			world.markBlockForUpdate(x, y, z);
+		}		
+	}
+
+	private void loadPacketData(
+			int left, int right, int up, int down, int forward, 
+			int type, boolean loop, boolean iterate, boolean drop,
+			EntityPlayerMP entityplayer) {
+		this.player = entityplayer;
+		this.doLoop = false;
+		this.area = this.area.rangeTo(left, right, up, down, forward);
+		this.type = type;
+		this.loopMode = loop;
+		this.removeModeIteration = iterate;
+		this.removeModeDrop = drop;
+		// 止めても問題ないはず
+		if (this.initializeThread != null)
+			this.initializeThread.stop();
+		preInit();
+	}
+	
 	// クライアント用
 	@Override
 	public void invalidate()
@@ -961,45 +1069,6 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	{
 		return this.doRender;
 	}
-
-	public void setFinished(boolean finished2) 
-	{
-		this.finished = finished2;
-	}
-
-	public void setEnabled(boolean enabled) 
-	{
-		this.enabled = enabled;
-	}
-
-	public void setDoLoop(boolean b) 
-	{
-		this.doLoop = b;
-	}
-
-	public void setInitializeThread(Thread thread) {
-		this.initializeThread = thread;		
-	}
-
-	public void setLoopMode(boolean loop) {
-		this.loopMode = loop;
-	}
-
-	public void setOrient(ForgeDirection orientation) {
-		this.orient = orientation;		
-	}
-
-	public void setPlayer(EntityPlayer entityliving) {
-		this.player = entityliving;		
-	}
-
-	public void setRemoveModeDrop(boolean drop) {
-		this.removeModeDrop = drop;		
-	}
-
-	public void setRemoveModeIteration(boolean iterate) {
-		this.removeModeIteration = iterate;
-	}
 	
 	public GUIAreaProvider getArea()
 	{
@@ -1026,5 +1095,23 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 				}
 			);
 		this.initializeThread.start();
+	}
+
+	public void onBlockActivated()
+	{
+		this.player = null;
+		this.doLoop = false;
+		if (this.initializeThread != null)
+			this.initializeThread.stop();
+		this.enabled = false;
+		initializeOnThread();		
+	}
+
+	public void onBlockPlacedBy(EntityLiving entityliving,
+			ForgeDirection orientation) {
+		this.player = (EntityPlayer) entityliving;
+		this.orient = orientation;
+		placed();
+		preInit();
 	}
 }

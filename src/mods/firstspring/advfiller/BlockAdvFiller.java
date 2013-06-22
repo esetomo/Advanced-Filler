@@ -92,10 +92,7 @@ public class BlockAdvFiller extends BlockContainer
 		ForgeDirection orientation = getOrientation(MathHelper.wrapAngleTo180_float(entityliving.rotationYaw));
 		world.setBlockMetadataWithNotify(i, j, k, orientation.getOpposite().ordinal(), 3);
 		TileAdvFiller tile = (TileAdvFiller) world.getBlockTileEntity(i, j, k);
-		tile.setPlayer((EntityPlayer) entityliving);
-		tile.setOrient(orientation);
-		tile.placed();
-		tile.preInit();
+		tile.onBlockPlacedBy(entityliving, orientation);
 	}
 
 	public ForgeDirection getOrientation(float i)
@@ -123,12 +120,7 @@ public class BlockAdvFiller extends BlockContainer
 			if (world.isRemote)
 				return true;
 			TileAdvFiller tile = (TileAdvFiller) world.getBlockTileEntity(i, j, k);
-			tile.setPlayer(null);
-			tile.setDoLoop(false);
-			if (tile.getInitializeThread() != null)
-				tile.getInitializeThread().stop();
-			tile.setEnabled(false);
-			tile.initializeOnThread();
+			tile.onBlockActivated();
 			// クライアントにパケット送信
 			entityplayer.addChatMessage("AdvFiller : Start Initialize");
 			world.markBlockForUpdate(i, j, k);
