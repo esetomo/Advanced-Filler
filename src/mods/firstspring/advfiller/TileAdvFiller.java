@@ -58,7 +58,9 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 				// Mode 4 : Exclusive Remove Mode 5 : TofuBuild Mode
 	private int tick = 0;
 	private int rate;
-	private boolean initialized = false, disabled = false, finished = false;
+	private boolean initialized = false;
+	private boolean enabled = true;
+	private boolean finished = false;
 	private boolean loopMode = false;
 	private boolean doLoop = false;
 	private boolean removeModeDrop = false;
@@ -124,7 +126,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 	public void preInit()
 	{
-		setDisable();
+		enabled = false;
 		dim = worldObj.getWorldInfo().getDimension();
 		orient = ForgeDirection.values()[worldObj.getBlockMetadata(xCoord, yCoord, zCoord)].getOpposite();
 		if (orient == ForgeDirection.UP || orient == ForgeDirection.DOWN || orient == ForgeDirection.UNKNOWN)
@@ -137,8 +139,8 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 			box.initialize(area);
 		}
 
-		initializeThread = new Thread(new AdvFillerInitializeThread(this));
-		initializeThread.start();
+		initializeOnThread();
+		
 		MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
 		ic2EnergyNet = true;
 		initialized = true;
@@ -177,16 +179,6 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		// TileEntityの情報(getDescriptionPacketで作ったパケット)が送られる模様
 		// 蔵側で実行すると表示の更新が行われる(結構重いので注意)
 		worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
-	}
-
-	public void setDisable()
-	{
-		this.disabled = true;
-	}
-
-	public void setEnable()
-	{
-		this.disabled = false;
 	}
 
 	// パケットで使用
@@ -252,16 +244,15 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		processEnergy();
 		if (!initialized)
 			preInit();
-		if (disabled)
+		if (! enabled)
 			return;
 		this.tick++;
 		if (loopMode && this.tick > AdvFiller.loopTick)
 		{
 			this.doLoop = true;
-			setDisable();
+			this.enabled = false;
 			player = null;
-			initializeThread = new Thread(new AdvFillerInitializeThread(this));
-			initializeThread.start();
+			initializeOnThread();
 			return;
 		}
 		if (finished)
@@ -780,7 +771,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 
 	public boolean isActive()
 	{
-		return !this.disabled && !finished;
+		return this.enabled && !finished;
 	}
 
 	@Override
@@ -803,7 +794,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 			dos.writeInt(type);
 			dos.writeBoolean(loopMode);
 			dos.writeBoolean(finished);
-			dos.writeBoolean(disabled);
+			dos.writeBoolean(enabled);
 			dos.writeBoolean(removeModeIteration);
 			dos.writeBoolean(removeModeDrop);
 		} catch (Exception e)
@@ -930,12 +921,7 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	{
 		return this.bcLoaded;
 	}
-	
-	public Ticket getChunkTicket()
-	{
-		return this.chunkTicket;
-	}
-	
+		
 	public int getDim()
 	{
 		return this.dim;
@@ -976,19 +962,14 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 		return this.doRender;
 	}
 
-	public void setChunkTicket(Ticket requestTicket) 
-	{
-		this.chunkTicket = requestTicket;
-	}
-
 	public void setFinished(boolean finished2) 
 	{
 		this.finished = finished2;
 	}
 
-	public void setDisabled(boolean disabled2) 
+	public void setEnabled(boolean enabled) 
 	{
-		this.disabled = disabled2;
+		this.enabled = enabled;
 	}
 
 	public void setDoLoop(boolean b) 
@@ -1023,5 +1004,27 @@ public class TileAdvFiller extends TileEntity implements IPowerReceptor, IEnergy
 	public GUIAreaProvider getArea()
 	{
 		return this.area;
+	}
+
+	public void initializeOnThread() {
+		this.initializeThread = 
+			new Thread(
+				new Runnable() {					
+					@Override
+					public void run() {
+						finished = false;
+						if (! doLoop)
+						{
+							ForgeChunkManager.releaseTicket(chunkTicket);
+							chunkTicket = ForgeChunkManager.requestTicket(AdvFiller.instance, worldObj, ForgeChunkManager.Type.NORMAL);
+							setLoadingChunks();
+						}
+						init();
+						enabled = true;
+						doLoop = false;
+					}
+				}
+			);
+		this.initializeThread.start();
 	}
 }

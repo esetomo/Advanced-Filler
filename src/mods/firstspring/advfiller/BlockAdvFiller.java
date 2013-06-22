@@ -127,9 +127,8 @@ public class BlockAdvFiller extends BlockContainer
 			tile.setDoLoop(false);
 			if (tile.getInitializeThread() != null)
 				tile.getInitializeThread().stop();
-			tile.setDisable();
-			tile.setInitializeThread(new Thread(new AdvFillerInitializeThread(tile)));
-			tile.getInitializeThread().start();
+			tile.setEnabled(false);
+			tile.initializeOnThread();
 			// クライアントにパケット送信
 			entityplayer.addChatMessage("AdvFiller : Start Initialize");
 			world.markBlockForUpdate(i, j, k);

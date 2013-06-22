@@ -25,7 +25,7 @@ public class PacketHandler implements IPacketHandler
 		{
 			int tileX, tileY, tileZ, left, right, up, down, forward, type;
 			ForgeDirection orient;
-			boolean loop, finished, disabled, iterate, drop;
+			boolean loop, finished, enabled, iterate, drop;
 			ByteArrayDataInput dat = ByteStreams.newDataInput(packet.data);
 			tileX = dat.readInt();
 			tileY = dat.readInt();
@@ -39,7 +39,7 @@ public class PacketHandler implements IPacketHandler
 			type = dat.readInt();
 			loop = dat.readBoolean();
 			finished = dat.readBoolean();
-			disabled = dat.readBoolean();
+			enabled = dat.readBoolean();
 			iterate = dat.readBoolean();
 			drop = dat.readBoolean();
 			World world = CommonProxy.proxy.getWorld();
@@ -60,7 +60,7 @@ public class PacketHandler implements IPacketHandler
 				filler.setType(type);
 				filler.setLoopMode(loop);
 				filler.setFinished(finished);
-				filler.setDisabled(disabled);
+				filler.setEnabled(enabled);
 				filler.setRemoveModeIteration(iterate);
 				filler.setRemoveModeDrop(drop);
 			}
